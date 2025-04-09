@@ -1,0 +1,9 @@
+IN, OUT, FRAMES
+preprocessed-exp1_2esp_145cm.parquet, noise, 1540, 2340
+preprocessed-0C-8B-95-A5-7B-08-exp1.parquet, jabuti, 
+preprocessed-0C-8B-95-A5-7B-08-exp1.parquet, jabuti, 
+preprocessed-0C-8B-95-A5-7B-08-exp1.parquet, jabuti, 
+preprocessed-0C-8B-95-A5-7B-08-exp1.parquet, jabuti, 
+preprocessed-0C-8B-95-A5-7B-08-exp1.parquet, jabuti, 
+preprocessed-0C-8B-95-A5-70-FC-exp1.parquet, jabuti, 
+preprocessed-0C-8B-95-A5-72-64-exp1.parquet, jabuti, 

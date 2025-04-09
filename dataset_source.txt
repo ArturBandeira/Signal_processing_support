@@ -1,0 +1,3 @@
+FILE, TYPE
+sliced-exp1_2esp_145cm, person
+sliced-exp1_2esp_145cm, noise
