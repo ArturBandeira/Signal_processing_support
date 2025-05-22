@@ -1,5 +1,3 @@
-import matplotlib
-matplotlib.use('TkAgg')
 import matplotlib.pyplot as plt
 from datetime import datetime
 import os
@@ -43,7 +41,7 @@ def plot_csi(csi_matrix):
     csi_matrix = np.transpose(csi_matrix)
     xlim = csi_matrix.shape[1]
     x_label = "Frame No."
-    limits = [0, xlim, 1, csi_matrix.shape[0]]
+    limits = [0, xlim, 1, csi_matrix.shape[0]] 
     im = ax.imshow(csi_matrix, cmap="jet", extent=limits, aspect="auto")
     cbar = ax.figure.colorbar(im, ax=ax)
     cbar.ax.set_ylabel("Amplitude (dB)")
@@ -63,4 +61,3 @@ file_path = os.path.join(path_to_dir, data_folder, FILE_NAME)
 print("Reading data from: " + file_path)
 data_parquet = pd.read_parquet(file_path)
 plot_csi(data_parquet)
-

@@ -12,7 +12,7 @@ class Partition(Enum):
 
 # Include your classes here
 class Label(Enum):
-    NOISE, PERSON = range(2)
+    REG1, REG2, REG3, REG4, NOISE = range(5)
 
 
 #Use dataset_source.txt as argument
@@ -83,6 +83,7 @@ print("")
 slice_size = 100
 subcarrier_size = 52
 headers = ["{}x{}".format(frame, sub) for frame in range(1, slice_size+1) for sub in range (1, subcarrier_size+1)]
+headers.insert(0, "timestamps")
 headers.insert(0, "label")
 
 
@@ -101,11 +102,12 @@ def flatten_data(df_data):
         for file in row.FileList:
             print("Reading data from: " + file)
             data = pd.read_parquet(file)
-
+            #timestamp = file.rsplit(".parquet", 1)[0].split("t",1)[1].replace("&",".")
+            timestamp = file.rsplit(".parquet", 1)[0].split("Q",1)[1].split("&",1)[0]
             # Flatten and label data
             flattened_array = data.to_numpy()
             flattened_array = flattened_array.flatten()
-            labeled_array = np.concatenate(([Label[row.Type.upper()].value], flattened_array)) # Adds label based on the Label enum
+            labeled_array = np.concatenate(([Label[row.Type.upper()].value], [timestamp], flattened_array)) # Adds label based on the Label enum
             labeled_array = labeled_array.reshape(1,-1) # array is in column shape, we need to change to row
 
             if Partition[row.Partition.upper()] is Partition.TEST:

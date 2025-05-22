@@ -93,6 +93,7 @@ for file in formatted_data_csv_files:
     # We use a RSSI normalization method dervied from https://doi.org/10.1109/JIOT.2020.3022573 and the CSIKit library
     mac_dict ={}
     for j in range(arquivo.shape[0]):
+        print(j)
         rss = arquivo.iloc[j][arquivo.columns[3]]
         mac_adress = arquivo.iloc[j][arquivo.columns[2]]
         sig_len = arquivo.iloc[j][arquivo.columns[20]]
@@ -102,8 +103,8 @@ for file in formatted_data_csv_files:
         if mac_adress not in mac_dict:
             mac_dict[mac_adress] = []
         stri = arquivo.iloc[j][arquivo.columns[-1]]
-        stri = stri[1:len(stri)-2]
-        values = stri.split(" ")
+        stri = stri.strip().strip('[]')
+        values = stri.split()
         values = [float(v) for v in values]
         real_part = values[0::2]
         real_part = np.array(real_part)

@@ -1,0 +1,6 @@
+FILE, TYPE
+sliced-A570FC, reg1
+sliced-A570FC, reg2
+sliced-A570FC, reg3
+sliced-A570FC, reg4
+sliced-A570FC, noise

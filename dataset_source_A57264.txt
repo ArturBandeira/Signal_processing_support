@@ -1,0 +1,6 @@
+FILE, TYPE
+sliced-A57264, reg1
+sliced-A57264, reg2
+sliced-A57264, reg3
+sliced-A57264, reg4
+sliced-A57264, noise

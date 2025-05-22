@@ -6,6 +6,7 @@ import pandas as pd
 import numpy as np
 import sys
 import config
+import math
 
 # We use this to display the total sampling area for the annotated region
 # This helps avoid user error and superimposing two sampling areas in different events
@@ -23,9 +24,11 @@ def plot_csi(csi_matrix):
     preprocessed_file_name =("-".join(FILE_NAME.split("-")[1:])).split(".")[0].split("-")[-1]
     mac_file = ":".join(FILE_NAME.split("-")[1:7])
     time_stamps = []
+    time_stamps_that_matter = []
     for file in raw_data_csv_files:
         raw_file_name = os.path.basename(file).split(".")[0]
-        if(raw_file_name == preprocessed_file_name):
+        if(1 == 1):
+        #if(raw_file_name == preprocessed_file_name):
             data = pd.read_csv(file, header=0)
             if(len(data.columns) == 27):
                 tem_time_stamp = 1
@@ -47,6 +50,7 @@ def plot_csi(csi_matrix):
                 fig.canvas.draw_idle() 
                 #print(time_stamps[round(event.xdata)])
                 list_of_values.append(round(event.xdata))
+                time_stamps_that_matter.append(time_stamps[round(event.xdata)])
 
     # Event fucntion to delete points created by the user
     def handleEvent2(event):
@@ -91,7 +95,7 @@ def plot_csi(csi_matrix):
     plt.title("CSI Amplitude Heatmap Plot")
     plt.show()
     if(tem_time_stamp):
-        return list_of_values
+        return list_of_values, time_stamps_that_matter
 
 # Getting the path to all folders and files we need
 path_to_dir = os.path.dirname(os.path.abspath(__file__))
@@ -110,7 +114,59 @@ FILE_NAME = sys.argv[1]
 file_path = os.path.join(path_to_dir, data_folder, FILE_NAME)
 print("Reading data from: " + file_path)
 data_parquet = pd.read_parquet(file_path)
-time_stamps_values = plot_csi(data_parquet)
+frames1, time_stamps_arr = plot_csi(data_parquet)
+
+
+path_to_dir = os.path.dirname(os.path.abspath(__file__))
+raw_data_folder = "1_raw_data"
+raw_folder_path = os.path.join(path_to_dir, raw_data_folder)
+raw_data_csv_files = glob.glob(os.path.join(raw_folder_path, "*.csv"))
+    
+preprocessed_file_name =("-".join(FILE_NAME.split("-")[1:])).split(".")[0].split("-")[-1]
+mac_file = ":".join(FILE_NAME.split("-")[1:7])
+time_stamps = []
+mac_dict={}
+
+for file in raw_data_csv_files:
+        raw_file_name = os.path.basename(file).split(".")[0]
+        if(1 == 1):
+        #if(raw_file_name == preprocessed_file_name):
+            data = pd.read_csv(file, header=0)
+            if(len(data.columns) == 27):
+                for j in range(data.shape[0]):
+                    mac_adress = data.iloc[j][data.columns[2]]
+                    if mac_adress.find("0C:8B:95:") == -1 or mac_adress not in config.VALID_MAC:
+                        continue
+                    if mac_adress not in mac_dict:
+                        mac_dict[mac_adress] = []
+                    mac_dict[mac_adress].append(data.iloc[j][data.columns[-1]])
+                #time_stamps = data.iloc[:, -1].to_numpy()
+                break
+
+mac_frames = { key: [] for key in mac_dict }
+print(mac_dict.keys())
+
+for value in time_stamps_arr:
+    mac_frames_temporary = { key: [] for key in mac_dict } # dict temporario, verificar continuidade dos timestamps antes de add no dict principal
+    for key, lst in mac_dict.items():
+        idx_mais_proximo = min(
+            range(len(lst)),
+            key=lambda i: abs(lst[i] - value)
+        )
+        mac_frames_temporary[key].append(idx_mais_proximo)
+    j = 0
+    arr_verify = np.zeros(config.ESP_NUMBER)
+    for chave,lista in mac_frames_temporary.items():
+        #verificar mac_dict[chave]
+        if abs(mac_dict[chave][lista[0]] - value) < config.TIME_CAP and max(mac_dict[chave][lista[0]] - mac_dict[chave][lista[0] - math.floor((config.WINDOW_SIZE/2))], mac_dict[chave][lista[0]+math.floor((config.WINDOW_SIZE/2))] - mac_dict[chave][lista[0]]) < config.TIME_SIZE + config.TIME_TOLERANCE:
+            arr_verify[j] = 1
+        j+=1
+    prod = 1
+    for l in  range(config.ESP_NUMBER):
+        prod = prod*arr_verify[l]
+    if prod == 1:
+        for chave,lista in mac_frames_temporary.items():
+            mac_frames[chave].append(lista[0])
 
 class_anotated = sys.argv[2]
 if os.path.isfile("slicing_source.txt"):
@@ -118,11 +174,21 @@ if os.path.isfile("slicing_source.txt"):
     f.write("\n")
 else:
     f = open("slicing_source.txt", "a+")
-    f.write("IN, OUT, FRAMES\n")
+    f.write("IN, OUT, FRAMES, TIMESTAMPS\n")
 
-f.write(sys.argv[1]+ ", " +sys.argv[2]+", ")
-for value in time_stamps_values:
-    if(value == time_stamps_values[-1]):
-        f.write(str(value))
-        break
-    f.write(str(value)+" ")
+for key in mac_dict.keys():
+    f.write("preprocessed-"+key.replace(":", "-")+"-my.parquet" +", " +sys.argv[2]+", ")
+    for value in mac_frames[key]:
+        if(value == mac_frames[key][-1]):
+            f.write(str(value) + ", ")
+            break
+        f.write(str(value)+" ") 
+    for value in mac_frames[key]:
+        if(value == mac_frames[key][-1]):
+            f.write(str(mac_dict[key][value]) + "\n")
+            break
+        f.write(str(mac_dict[key][value])+" ") 
+
+# mac_dict: dicionario chaves: mac adress, conteudo: timestamps associados a cada mac_adress
+#time_stamp_arr: array com os timestamps selecionados pelo usuario
+#mac_frames: dicionario com os frames associados aos timestamps escolhidos pelo usuario para cada mac adress

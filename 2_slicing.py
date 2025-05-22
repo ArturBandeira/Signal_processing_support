@@ -10,7 +10,7 @@ class Partition(Enum):
     TRAIN, TEST = range(2)
 
 
-def slice_data(slice_list, partition:Partition, data, sliced_file_main_folder, sliced_file_name):
+def slice_data(slice_list, timestamps_list, partition:Partition, data, sliced_file_main_folder, sliced_file_name):
 
     # Slice window size, number of subslices on each side and amount of slide between subslices
     # Obs: subslice is a slice containing the same event, but slightly skewed left or right for data augmentation purposes
@@ -30,6 +30,7 @@ def slice_data(slice_list, partition:Partition, data, sliced_file_main_folder, s
         os.makedirs(subfolder_path)
 
     # Iterates over list of events
+    i = 0
     for slice_center in slice_list:
         slice_start = int(int(slice_center) - slice_size/2) #casting to int because of iloc
         slice_end = int(int(slice_center) + slice_size/2)
@@ -40,8 +41,9 @@ def slice_data(slice_list, partition:Partition, data, sliced_file_main_folder, s
         for slice_number in slice_range:
             sliced_data = data.iloc[slice_start+(slice_slide*slice_number):slice_end+(slice_slide*slice_number)]
             # Path is like: sliced/train/sliced_file_name_3500_2.parquet
-            path = os.path.join(subfolder_path, sliced_file_name) + "_" + str(slice_center) +"_"+ str(slice_number) + ".parquet"
+            path = os.path.join(subfolder_path, sliced_file_name) + "_" + str(slice_center) +"_Q"+str(timestamps_list[i].replace(".","&"))+ str(slice_number) + ".parquet"
             sliced_data.to_parquet(path)
+        i+=1
 
     print(f'Slicing done for {sliced_file_name} in the {partition.name} partition.')
     return
@@ -73,6 +75,7 @@ if not os.path.exists(sliced_data_folder):
 for row in df_source.itertuples(index=True, name='Pandas'):
 
     slice_center_list =  row.FRAMES.split(" ")
+    timestamps_list  = row.TIMESTAMPS.split(" ")
 
     print("Slicing around the following frames:")
     print(slice_center_list)
@@ -96,7 +99,10 @@ for row in df_source.itertuples(index=True, name='Pandas'):
     print(f'Index split: {index_split}')
 
     slice_train_list = slice_center_list[:index_split]
-    slice_test_list =  slice_center_list[index_split:]
+    slice_test_list  =  slice_center_list[index_split:]
+
+    timestamps_train_list = timestamps_list[:index_split]
+    timestamps_test_list  = timestamps_list[index_split:]
 
     print(f'Train list has len {len(slice_train_list)}:')
     print(slice_train_list)
@@ -107,8 +113,8 @@ for row in df_source.itertuples(index=True, name='Pandas'):
     data = pd.read_parquet(preprocessed_file_path)
 
     #Slicing train data
-    slice_data(slice_train_list, Partition.TRAIN, data, sliced_file_main_folder, sliced_file_name)
+    slice_data(slice_train_list, timestamps_train_list, Partition.TRAIN, data, sliced_file_main_folder, sliced_file_name)
     #Slicing test data
-    slice_data(slice_test_list, Partition.TEST, data, sliced_file_main_folder, sliced_file_name)
+    slice_data(slice_test_list, timestamps_test_list,Partition.TEST, data, sliced_file_main_folder, sliced_file_name)
 
     print("Completed all slicing!")
